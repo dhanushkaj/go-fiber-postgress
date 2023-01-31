@@ -29,16 +29,14 @@ func (r *Repository) CreateBook(context *fiber.Ctx) error {
 			&fiber.Map{"message": "request failed"})
 		return err
 	}
-
 	err = r.DB.Create(&book).Error
 	if err != nil {
 		context.Status(http.StatusBadRequest).JSON(
 			&fiber.Map{"message": "could not create the book"})
 		return err
 	}
-
-	context.Status(http.StatusOK).JSON(
-		&fiber.Map{"message": "The book has been created"})
+	context.Status(http.StatusCreated).JSON(
+		&fiber.Map{"message": "The book has been created", "data": book})
 	return nil
 }
 
@@ -96,7 +94,7 @@ func (r *Repository) DeleteBook(context *fiber.Ctx) error {
 		context.Status(http.StatusBadRequest).JSON(&fiber.Map{
 			"message": "Could not delete the book"})
 	}
-	context.Status(http.StatusOK).JSON(&fiber.Map{
+	context.Status(http.StatusNoContent).JSON(&fiber.Map{
 		"message": "Bookes deleted sucessfully"})
 	return nil
 }
@@ -114,6 +112,14 @@ func (r *Repository) SetupRoutes(app *fiber.App) {
 }
 
 func main() {
+
+	r, _ := initDB()
+	app := fiber.New()
+	r.SetupRoutes(app)
+	app.Listen(":8080")
+}
+
+func initDB() (*Repository, error) {
 
 	err := godotenv.Load(".env")
 
@@ -141,11 +147,9 @@ func main() {
 		log.Fatal("could not migrate book")
 	}
 
-	r := Repository{
+	r := &Repository{
 		DB: db,
 	}
+	return r, err
 
-	app := fiber.New()
-	r.SetupRoutes(app)
-	app.Listen(":8080")
 }
